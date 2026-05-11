@@ -32,16 +32,29 @@ export async function POST(request: Request) {
       .insert({ email, code, expires_at: expiresAt });
 
     if (insertError) {
-      console.error("Insert verification code error:", insertError);
-      return NextResponse.json({ error: "验证码生成失败" }, { status: 500 });
+      console.error("Insert verification code error:", JSON.stringify(insertError, null, 2));
+      return NextResponse.json(
+        { error: `数据库写入失败: ${insertError.message} (code: ${insertError.code})` },
+        { status: 500 }
+      );
     }
 
     // 发送邮件
-    await sendVerificationCodeEmail(email, code);
+    try {
+      await sendVerificationCodeEmail(email, code);
+    } catch (mailErr: unknown) {
+      const msg = mailErr instanceof Error ? mailErr.message : String(mailErr);
+      console.error("Send email error:", msg);
+      return NextResponse.json(
+        { error: `邮件发送失败: ${msg}` },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error("send-verification-code error:", err);
-    return NextResponse.json({ error: "服务器错误" }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("send-verification-code error:", msg);
+    return NextResponse.json({ error: `服务器错误: ${msg}` }, { status: 500 });
   }
 }
