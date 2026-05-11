@@ -28,10 +28,15 @@ export function FileDownload({ files }: FileDownloadProps) {
                 </p>
               </div>
             </div>
-            <Button variant="outline" size="sm">
+            <a
+              href={file.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+            >
               <Download className="mr-2 h-4 w-4" />
               下载
-            </Button>
+            </a>
           </div>
         ))}
       </div>

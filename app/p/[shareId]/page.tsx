@@ -1,6 +1,5 @@
 "use client";
 
-import { mockProjects, mockMessages } from "@/lib/mock-data";
 import { ProgressBar } from "@/components/client-portal/progress-bar";
 import { StageTimeline } from "@/components/client-portal/stage-timeline";
 import { FileDownload } from "@/components/client-portal/file-download";
@@ -11,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
 import { useState, useEffect } from "react";
 import { notFound } from "next/navigation";
+import { fetchProjectByShareId, fetchMessagesByProject } from "@/lib/api";
+import type { Project, ClientMessage } from "@/lib/types";
 
 interface ClientPortalPageProps {
   params: Promise<{ shareId: string }>;
@@ -21,18 +22,32 @@ export default function ClientPortalPage({ params }: ClientPortalPageProps) {
   const [passwordError, setPasswordError] = useState("");
   const [message, setMessage] = useState("");
   const [shareId, setShareId] = useState<string | null>(null);
+  const [project, setProject] = useState<Project | null>(null);
+  const [messages, setMessages] = useState<ClientMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [notFoundFlag, setNotFound] = useState(false);
 
   useEffect(() => {
-    params.then((p) => setShareId(p.shareId));
+    params.then(async (p) => {
+      setShareId(p.shareId);
+      const proj = await fetchProjectByShareId(p.shareId);
+      if (!proj) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
+      setProject(proj);
+      const msgs = await fetchMessagesByProject(proj.id);
+      setMessages(msgs);
+      setLoading(false);
+    });
   }, [params]);
 
-  const project = shareId ? mockProjects.find((p) => p.shareId === shareId) : null;
-
-  if (shareId && !project) {
+  if (notFoundFlag) {
     notFound();
   }
 
-  if (!project) {
+  if (loading || !project) {
     return <div>Loading...</div>;
   }
 
@@ -65,10 +80,6 @@ export default function ClientPortalPage({ params }: ClientPortalPageProps) {
       <PasswordGate onSubmit={handlePasswordSubmit} error={passwordError} />
     );
   }
-
-  const projectMessages = mockMessages.filter(
-    (m) => m.projectId === project?.id
-  );
 
   return (
     <div className="container max-w-2xl mx-auto py-12 px-4 space-y-8">
@@ -106,9 +117,9 @@ export default function ClientPortalPage({ params }: ClientPortalPageProps) {
             </Button>
           </div>
 
-          {projectMessages.length > 0 && (
+          {messages.length > 0 && (
             <div className="mt-4 space-y-3">
-              {projectMessages.map((msg) => (
+              {messages.map((msg) => (
                 <div key={msg.id} className="rounded-lg bg-muted p-3">
                   <p className="text-sm">{msg.content}</p>
                   <p className="text-xs text-muted-foreground mt-1">

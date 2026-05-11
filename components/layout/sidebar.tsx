@@ -36,6 +36,16 @@ const navItems = [
     href: "/billing",
     icon: CreditCard,
   },
+  {
+    title: "套餐配置",
+    href: "/billing/plans",
+    icon: CreditCard,
+  },
+  {
+    title: "发票列表",
+    href: "/billing/invoices",
+    icon: CreditCard,
+  },
 ];
 
 export function Sidebar() {

@@ -243,6 +243,41 @@ export const mockMessages: ClientMessage[] = [
   },
 ];
 
+export const mockInvoices = [
+  {
+    id: "inv-001",
+    number: "INV-2024-001",
+    date: "2024-05-01",
+    amount: 99,
+    status: "paid",
+    plan: "Pro",
+  },
+  {
+    id: "inv-002",
+    number: "INV-2024-002",
+    date: "2024-04-01",
+    amount: 99,
+    status: "paid",
+    plan: "Pro",
+  },
+  {
+    id: "inv-003",
+    number: "INV-2024-003",
+    date: "2024-03-01",
+    amount: 0,
+    status: "paid",
+    plan: "Free",
+  },
+  {
+    id: "inv-004",
+    number: "INV-2024-004",
+    date: "2024-02-01",
+    amount: 299,
+    status: "refunded",
+    plan: "Enterprise",
+  },
+];
+
 export const mockStats = {
   totalUsers: 12340,
   activeUsers: 8210,

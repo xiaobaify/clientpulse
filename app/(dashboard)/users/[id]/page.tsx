@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
-import { mockUsers } from "@/lib/mock-data";
+import { fetchUserById } from "@/lib/api";
 import { UserDetailCard } from "@/components/users/user-detail-card";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+
+export const dynamic = "force-dynamic";
 
 interface UserDetailPageProps {
   params: Promise<{ id: string }>;
@@ -10,7 +12,7 @@ interface UserDetailPageProps {
 
 export default async function UserDetailPage({ params }: UserDetailPageProps) {
   const { id } = await params;
-  const user = mockUsers.find((u) => u.id === id);
+  const user = await fetchUserById(id);
 
   if (!user) {
     notFound();

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { mockProjects, mockMessages } from "@/lib/mock-data";
+import { fetchProjectById, fetchMessagesByProject } from "@/lib/api";
 import { StageBoard } from "@/components/projects/stage-board";
 import { FileUpload } from "@/components/projects/file-upload";
 import { ShareLinkGenerator } from "@/components/projects/share-link-generator";
@@ -9,21 +9,21 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Edit } from "lucide-react";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 interface ProjectDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
 export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const { id } = await params;
-  const project = mockProjects.find((p) => p.id === id);
+  const project = await fetchProjectById(id);
 
   if (!project) {
     notFound();
   }
 
-  const projectMessages = mockMessages.filter(
-    (m) => m.projectId === project.id
-  );
+  const projectMessages = await fetchMessagesByProject(project.id);
 
   const currentStage = project.stages.find(
     (s) => s.status === "in_progress"
@@ -79,7 +79,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
               {currentStage ? (
                 <div className="space-y-4">
                   <p className="font-medium">{currentStage.name}</p>
-                  <FileUpload files={currentStage.files} />
+                  <FileUpload files={currentStage.files} stageId={currentStage.id} />
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">

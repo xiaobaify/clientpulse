@@ -1,10 +1,14 @@
 import { UserTable } from "@/components/users/user-table";
-import { mockUsers } from "@/lib/mock-data";
+import { fetchUsers } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
-export default function UsersPage() {
+export const dynamic = "force-dynamic";
+
+export default async function UsersPage() {
+  const users = await fetchUsers();
+
   return (
     <div className="space-y-6">
       <div>
@@ -25,7 +29,7 @@ export default function UsersPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <UserTable users={mockUsers} />
+          <UserTable users={users} />
         </CardContent>
       </Card>
     </div>

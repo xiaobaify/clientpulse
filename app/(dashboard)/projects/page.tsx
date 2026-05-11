@@ -1,10 +1,14 @@
 import { ProjectList } from "@/components/projects/project-list";
-import { mockProjects } from "@/lib/mock-data";
+import { fetchProjects } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
-export default function ProjectsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function ProjectsPage() {
+  const projects = await fetchProjects();
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -23,7 +27,7 @@ export default function ProjectsPage() {
           <CardTitle>项目列表</CardTitle>
         </CardHeader>
         <CardContent>
-          <ProjectList projects={mockProjects} />
+          <ProjectList projects={projects} />
         </CardContent>
       </Card>
     </div>
