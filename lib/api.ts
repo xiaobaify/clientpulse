@@ -311,3 +311,20 @@ export async function signUp(email: string, password: string, name: string) {
 export async function signOut() {
   await supabase.auth.signOut();
 }
+
+export async function sendOtp(email: string) {
+  const { data, error } = await supabase.auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: true },
+  });
+  return { data, error };
+}
+
+export async function verifyOtp(email: string, token: string) {
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: "signup",
+  });
+  return { data, error };
+}
