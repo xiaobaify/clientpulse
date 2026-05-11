@@ -1,13 +1,21 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const transporter = nodemailer.createTransport({
+  host: "smtp.qq.com",
+  port: 465,
+  secure: true,
+  auth: {
+    user: "2938193230@qq.com",
+    pass: process.env.QQ_SMTP_PASS,
+  },
+});
 
 export async function sendVerificationCodeEmail(
   email: string,
   code: string
 ): Promise<void> {
-  const { error } = await resend.emails.send({
-    from: "SaaS Admin <noreply@resend.dev>",
+  await transporter.sendMail({
+    from: '"SaaS Admin" <2938193230@qq.com>',
     to: email,
     subject: "【SaaS Admin】你的注册验证码",
     html: `
@@ -38,9 +46,4 @@ export async function sendVerificationCodeEmail(
       </div>
     `,
   });
-
-  if (error) {
-    console.error("Resend error:", error);
-    throw new Error("邮件发送失败");
-  }
 }
