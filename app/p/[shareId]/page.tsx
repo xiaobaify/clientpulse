@@ -9,22 +9,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { notFound } from "next/navigation";
 
 interface ClientPortalPageProps {
-  params: { shareId: string };
+  params: Promise<{ shareId: string }>;
 }
 
 export default function ClientPortalPage({ params }: ClientPortalPageProps) {
   const [authenticated, setAuthenticated] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [message, setMessage] = useState("");
+  const [shareId, setShareId] = useState<string | null>(null);
 
-  const project = mockProjects.find((p) => p.shareId === params.shareId);
+  useEffect(() => {
+    params.then((p) => setShareId(p.shareId));
+  }, [params]);
+
+  const project = shareId ? mockProjects.find((p) => p.shareId === shareId) : null;
+
+  if (shareId && !project) {
+    notFound();
+  }
 
   if (!project) {
-    notFound();
+    return <div>Loading...</div>;
   }
 
   const needsPassword = !!project.sharePassword;

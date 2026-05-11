@@ -10,11 +10,12 @@ import { ArrowLeft, Edit } from "lucide-react";
 import Link from "next/link";
 
 interface ProjectDetailPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
-  const project = mockProjects.find((p) => p.id === params.id);
+export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {
+  const { id } = await params;
+  const project = mockProjects.find((p) => p.id === id);
 
   if (!project) {
     notFound();

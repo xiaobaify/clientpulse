@@ -5,11 +5,12 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 interface UserDetailPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export default function UserDetailPage({ params }: UserDetailPageProps) {
-  const user = mockUsers.find((u) => u.id === params.id);
+export default async function UserDetailPage({ params }: UserDetailPageProps) {
+  const { id } = await params;
+  const user = mockUsers.find((u) => u.id === id);
 
   if (!user) {
     notFound();
