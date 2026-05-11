@@ -315,7 +315,7 @@ export async function signOut() {
 export async function sendOtp(email: string) {
   const { data, error } = await supabase.auth.signInWithOtp({
     email,
-    options: { shouldCreateUser: true },
+    options: { shouldCreateUser: true, data: { useOtp: true } },
   });
   return { data, error };
 }
