@@ -4,40 +4,38 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { useState, useEffect, useRef } from "react";
-import { sendOtp, verifyOtp } from "@/lib/api";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
 export default function RegisterPage() {
-  const [step, setStep] = useState<"form" | "otp">("form");
+  const router = useRouter();
+  const [step, setStep] = useState<"form" | "verify">("form");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [countdown, setCountdown] = useState(60);
-  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const router = useRouter();
 
-  // Countdown timer
+  // 验证码相关
+  const [code, setCode] = useState(["", "", "", "", "", ""]);
+  const [countdown, setCountdown] = useState(0);
+  const [verifyError, setVerifyError] = useState("");
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // 倒计时
   useEffect(() => {
-    if (step !== "otp" || countdown <= 0) return;
+    if (countdown <= 0) return;
     const timer = setInterval(() => {
-      setCountdown((prev) => prev - 1);
+      setCountdown((prev) => (prev <= 1 ? 0 : prev - 1));
     }, 1000);
     return () => clearInterval(timer);
-  }, [step, countdown]);
+  }, [countdown]);
 
-  // Focus first OTP input on step change
-  useEffect(() => {
-    if (step === "otp") {
-      otpRefs.current[0]?.focus();
-    }
-  }, [step]);
-
-  async function handleSendOtp(e: React.FormEvent) {
+  // 发送验证码
+  async function handleSendCode(e: React.FormEvent) {
     e.preventDefault();
     setError("");
 
@@ -51,175 +49,225 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
-    const { error: authError } = await sendOtp(email);
+    const res = await fetch("/api/send-verification-code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json();
     setLoading(false);
 
-    if (authError) {
-      const msg = authError.message;
-      if (msg.includes("already registered") || msg.includes("already been registered")) {
-        setError("该邮箱已注册，请直接登录");
-      } else if (msg.includes("rate limit")) {
-        setError("发送过于频繁，请稍后再试");
-      } else {
-        setError(msg);
-      }
-      return;
-    }
-
-    setStep("otp");
-    setCountdown(60);
-  }
-
-  async function handleResend() {
-    setError("");
-    setLoading(true);
-    const { error: authError } = await sendOtp(email);
-    setLoading(false);
-
-    if (authError) {
-      setError(authError.message);
+    if (!res.ok) {
+      setError(data.error || "发送失败");
       return;
     }
 
     setCountdown(60);
-    setOtp(["", "", "", "", "", ""]);
-    otpRefs.current[0]?.focus();
+    setStep("verify");
+    // 自动聚焦第一个输入框
+    setTimeout(() => inputRefs.current[0]?.focus(), 100);
   }
 
-  function handleOtpChange(index: number, value: string) {
-    // Only allow digits
-    const digit = value.replace(/\D/g, "").slice(-1);
-    const newOtp = [...otp];
-    newOtp[index] = digit;
-    setOtp(newOtp);
+  // 处理验证码输入
+  function handleCodeChange(index: number, value: string) {
+    if (!/^\d*$/.test(value)) return;
+    const newCode = [...code];
+    newCode[index] = value.slice(-1);
+    setCode(newCode);
 
-    if (digit && index < 5) {
-      otpRefs.current[index + 1]?.focus();
+    // 输入后自动跳到下一个
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
     }
 
-    // Auto-submit when all 6 digits are filled
-    if (newOtp.every((d) => d !== "")) {
-      handleVerify(newOtp.join(""));
-    }
-  }
-
-  function handleOtpKeyDown(index: number, e: React.KeyboardEvent) {
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      otpRefs.current[index - 1]?.focus();
+    // 满6位自动提交
+    if (newCode.every((c) => c !== "") && index === 5) {
+      verifyCode(newCode.join(""));
     }
   }
 
-  function handleOtpPaste(e: React.ClipboardEvent) {
+  // 处理退格键
+  function handleKeyDown(
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) {
+    if (e.key === "Backspace" && !code[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  }
+
+  // 处理粘贴
+  function handlePaste(e: React.ClipboardEvent) {
     e.preventDefault();
     const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
     if (!pasted) return;
-    const newOtp = [...otp];
-    for (let i = 0; i < pasted.length; i++) {
-      newOtp[i] = pasted[i];
+    const newCode = [...code];
+    for (let i = 0; i < 6; i++) {
+      newCode[i] = pasted[i] || "";
     }
-    setOtp(newOtp);
-    const focusIndex = Math.min(pasted.length, 5);
-    otpRefs.current[focusIndex]?.focus();
-    if (newOtp.every((d) => d !== "")) {
-      handleVerify(newOtp.join(""));
+    setCode(newCode);
+    const nextEmpty = newCode.findIndex((c) => c === "");
+    const focusIndex = nextEmpty === -1 ? 5 : nextEmpty;
+    inputRefs.current[focusIndex]?.focus();
+
+    // 满6位自动提交
+    if (newCode.every((c) => c !== "")) {
+      verifyCode(newCode.join(""));
     }
   }
 
-  async function handleVerify(token: string) {
-    setError("");
+  // 校验验证码并注册
+  const verifyCode = useCallback(
+    async (codeStr: string) => {
+      setVerifyError("");
+      setVerifyLoading(true);
+
+      try {
+        // 1. 校验验证码 + 创建用户
+        const res = await fetch("/api/verify-code", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, code: codeStr }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          setVerifyError(data.error || "验证失败");
+          setVerifyLoading(false);
+          return;
+        }
+
+        // 2. 用邮箱密码登录获取 session
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (signInError) {
+          // 注册成功但自动登录失败，跳转登录页
+          router.replace("/login");
+          return;
+        }
+
+        // 3. 登录成功，跳转首页
+        router.replace("/");
+      } catch {
+        setVerifyError("网络错误，请重试");
+        setVerifyLoading(false);
+      }
+    },
+    [email, password, router]
+  );
+
+  // 重新发送验证码
+  async function handleResend() {
+    if (countdown > 0) return;
+    setVerifyError("");
     setLoading(true);
 
-    const { error: authError } = await verifyOtp(email, token);
+    const res = await fetch("/api/send-verification-code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json();
     setLoading(false);
 
-    if (authError) {
-      if (authError.message.includes("expired") || authError.message.includes("invalid")) {
-        setError("验证码无效或已过期，请重新发送");
-      } else {
-        setError(authError.message);
-      }
+    if (!res.ok) {
+      setVerifyError(data.error || "发送失败");
       return;
     }
 
-    router.push("/");
+    setCountdown(60);
+    setCode(["", "", "", "", "", ""]);
+    inputRefs.current[0]?.focus();
   }
 
-  if (step === "otp") {
+  // --- 验证码输入步骤 ---
+  if (step === "verify") {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Card className="w-full max-w-sm">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">验证邮箱</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              验证码已发送至 <span className="font-medium text-foreground">{email}</span>
-            </p>
+            <CardTitle className="text-2xl">输入验证码</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="flex justify-center gap-2">
-                {otp.map((digit, i) => (
-                  <Input
-                    key={i}
-                    ref={(el) => { otpRefs.current[i] = el; }}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    className="h-12 w-12 text-center text-lg font-semibold"
-                    value={digit}
-                    onChange={(e) => handleOtpChange(i, e.target.value)}
-                    onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                    onPaste={i === 0 ? handleOtpPaste : undefined}
-                  />
-                ))}
-              </div>
+          <CardContent className="space-y-6">
+            <p className="text-center text-sm text-muted-foreground">
+              验证码已发送至
+              <br />
+              <span className="font-medium text-foreground">{email}</span>
+            </p>
 
-              {error && (
-                <p className="text-sm text-destructive text-center">{error}</p>
-              )}
+            {/* 6位验证码输入框 */}
+            <div className="flex justify-center gap-2">
+              {code.map((digit, i) => (
+                <input
+                  key={i}
+                  ref={(el) => {
+                    inputRefs.current[i] = el;
+                  }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleCodeChange(i, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(i, e)}
+                  onPaste={i === 0 ? handlePaste : undefined}
+                  className="h-12 w-12 rounded-md border border-input bg-background text-center text-xl font-semibold tabular-nums focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
+                  disabled={verifyLoading}
+                />
+              ))}
+            </div>
 
-              <Button
-                className="w-full"
-                disabled={loading || otp.some((d) => d === "")}
-                onClick={() => handleVerify(otp.join(""))}
-              >
-                {loading ? "验证中..." : "验证"}
-              </Button>
+            {verifyError && (
+              <p className="text-center text-sm text-destructive">
+                {verifyError}
+              </p>
+            )}
 
-              <div className="text-center text-sm text-muted-foreground">
-                {countdown > 0 ? (
-                  <span>{countdown} 秒后可重新发送</span>
-                ) : (
-                  <button
-                    type="button"
-                    className="text-primary underline-offset-4 hover:underline"
-                    onClick={handleResend}
-                    disabled={loading}
-                  >
-                    重新发送验证码
-                  </button>
-                )}
-              </div>
-
+            {verifyLoading && (
               <p className="text-center text-sm text-muted-foreground">
+                正在注册...
+              </p>
+            )}
+
+            {/* 重新发送 */}
+            <div className="text-center">
+              {countdown > 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {countdown} 秒后可重新发送
+                </p>
+              ) : (
                 <button
                   type="button"
-                  className="text-primary underline-offset-4 hover:underline"
-                  onClick={() => {
-                    setStep("form");
-                    setError("");
-                    setOtp(["", "", "", "", "", ""]);
-                  }}
+                  onClick={handleResend}
+                  disabled={loading}
+                  className="text-sm text-primary underline-offset-4 hover:underline"
                 >
-                  返回修改邮箱
+                  {loading ? "发送中..." : "重新发送验证码"}
                 </button>
-              </p>
+              )}
             </div>
+
+            {/* 返回修改 */}
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setStep("form");
+                setCode(["", "", "", "", "", ""]);
+                setVerifyError("");
+              }}
+            >
+              返回修改邮箱
+            </Button>
           </CardContent>
         </Card>
       </div>
     );
   }
 
+  // --- 邮箱密码表单步骤 ---
   return (
     <div className="flex min-h-screen items-center justify-center">
       <Card className="w-full max-w-sm">
@@ -227,7 +275,7 @@ export default function RegisterPage() {
           <CardTitle className="text-2xl">注册</CardTitle>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4" onSubmit={handleSendOtp}>
+          <form className="space-y-4" onSubmit={handleSendCode}>
             <div className="space-y-2">
               <Label htmlFor="email">邮箱</Label>
               <Input
@@ -261,16 +309,17 @@ export default function RegisterPage() {
                 required
               />
             </div>
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
+            {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "发送中..." : "发送验证码"}
             </Button>
           </form>
           <p className="mt-4 text-center text-sm text-muted-foreground">
             已有账号？{" "}
-            <Link href="/login" className="text-primary underline-offset-4 hover:underline">
+            <Link
+              href="/login"
+              className="text-primary underline-offset-4 hover:underline"
+            >
               立即登录
             </Link>
           </p>

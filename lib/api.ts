@@ -299,32 +299,21 @@ export async function signIn(email: string, password: string) {
   return { data, error };
 }
 
-export async function signUp(email: string, password: string, name: string) {
+export async function signUp(
+  email: string,
+  password: string,
+  redirectTo: string
+) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { name } },
+    options: {
+      emailRedirectTo: redirectTo,
+    },
   });
   return { data, error };
 }
 
 export async function signOut() {
   await supabase.auth.signOut();
-}
-
-export async function sendOtp(email: string) {
-  const { data, error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { shouldCreateUser: true, data: { useOtp: true } },
-  });
-  return { data, error };
-}
-
-export async function verifyOtp(email: string, token: string) {
-  const { data, error } = await supabase.auth.verifyOtp({
-    email,
-    token,
-    type: "signup",
-  });
-  return { data, error };
 }
