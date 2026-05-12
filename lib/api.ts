@@ -228,6 +228,36 @@ export async function fetchMessagesByProject(
   return (data as ClientMessageRow[]).map(mapMessage);
 }
 
+const DEFAULT_PLANS: Plan[] = [
+  {
+    id: "free",
+    name: "Free",
+    price: 0,
+    interval: "monthly",
+    features: ["3 个项目", "1GB 存储", "基础支持"],
+    maxProjects: 3,
+    maxStorage: 1,
+  },
+  {
+    id: "pro",
+    name: "Pro",
+    price: 99,
+    interval: "monthly",
+    features: ["无限项目", "10GB 存储", "优先支持", "API 访问"],
+    maxProjects: -1,
+    maxStorage: 10,
+  },
+  {
+    id: "enterprise",
+    name: "Enterprise",
+    price: 299,
+    interval: "monthly",
+    features: ["无限项目", "100GB 存储", "专属支持", "API 访问", "自定义域名"],
+    maxProjects: -1,
+    maxStorage: 100,
+  },
+];
+
 export async function fetchPlans(): Promise<Plan[]> {
   const { data, error } = await supabase
     .from("plans")
@@ -236,9 +266,11 @@ export async function fetchPlans(): Promise<Plan[]> {
 
   if (error) {
     console.error("fetchPlans error:", error.message);
-    return [];
+    return DEFAULT_PLANS;
   }
-  return (data as PlanRow[]).map(mapPlan);
+
+  const plans = (data as PlanRow[]).map(mapPlan);
+  return plans.length > 0 ? plans : DEFAULT_PLANS;
 }
 
 // --- Stats (derived from real data) ---
