@@ -24,7 +24,6 @@ export default async function PlansPage() {
               <PlanCard
                 key={plan.id}
                 plan={plan}
-                isCurrent={plan.id === "pro"}
               />
             ))}
           </div>

@@ -19,25 +19,25 @@ export function StatsCards({
       title: "总用户",
       value: totalUsers.toLocaleString(),
       icon: Users,
-      description: "+12% 较上月",
+      description: totalUsers > 0 ? "已注册用户总数" : "等待第一位用户注册",
     },
     {
       title: "活跃用户",
       value: activeUsers.toLocaleString(),
       icon: Activity,
-      description: "+8% 较上月",
+      description: activeUsers > 0 ? "当前活跃用户数" : "暂无活跃用户",
     },
     {
       title: "月收入",
       value: `¥${monthlyRevenue.toLocaleString()}`,
       icon: DollarSign,
-      description: "+15% 较上月",
+      description: monthlyRevenue > 0 ? "本月累计收入" : "尚未产生收入",
     },
     {
       title: "项目数",
       value: totalProjects.toString(),
       icon: FolderKanban,
-      description: "+5 本月新增",
+      description: totalProjects > 0 ? "当前项目总数" : "还没有项目",
     },
   ];
 

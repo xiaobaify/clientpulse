@@ -62,7 +62,7 @@ export function Sidebar() {
       <div className="flex h-14 items-center border-b px-4">
         {!collapsed && (
           <Link href="/" className="font-bold text-lg">
-            SaaS Admin
+            ClientPulse
           </Link>
         )}
       </div>

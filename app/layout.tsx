@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SaaS Admin Dashboard",
-  description: "SaaS 管理后台",
+  title: "ClientPulse",
+  description: "ClientPulse — 客户项目管理平台",
 };
 
 export default function RootLayout({

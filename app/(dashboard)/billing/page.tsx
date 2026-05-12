@@ -16,10 +16,10 @@ export default async function BillingPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <UsageMeter title="已用项目" used={5} total={-1} unit="个" />
-        <UsageMeter title="已用存储" used={3.2} total={10} unit="GB" />
-        <UsageMeter title="团队成员" used={8} total={-1} unit="人" />
-        <UsageMeter title="API 调用" used={1250} total={10000} unit="次" />
+        <UsageMeter title="已用项目" used={0} total={-1} unit="个" />
+        <UsageMeter title="已用存储" used={0} total={10} unit="GB" />
+        <UsageMeter title="团队成员" used={0} total={-1} unit="人" />
+        <UsageMeter title="API 调用" used={0} total={10000} unit="次" />
       </div>
 
       <Card>
@@ -32,7 +32,6 @@ export default async function BillingPage() {
               <PlanCard
                 key={plan.id}
                 plan={plan}
-                isCurrent={plan.id === "pro"}
               />
             ))}
           </div>

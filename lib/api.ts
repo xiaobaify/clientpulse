@@ -244,19 +244,18 @@ export async function fetchPlans(): Promise<Plan[]> {
 // --- Stats (derived from real data) ---
 
 export async function fetchStats() {
-  const [usersRes, projectsRes] = await Promise.all([
+  const [usersRes, projectsRes, activeRes] = await Promise.all([
     supabase.from("profiles").select("id", { count: "exact", head: true }),
     supabase.from("projects").select("id", { count: "exact", head: true }),
+    supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "active"),
   ]);
-
-  const { count: activeCount } = await supabase
-    .from("profiles")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "active");
 
   return {
     totalUsers: usersRes.count ?? 0,
-    activeUsers: activeCount ?? 0,
+    activeUsers: activeRes.count ?? 0,
     monthlyRevenue: 0,
     totalProjects: projectsRes.count ?? 0,
   };
