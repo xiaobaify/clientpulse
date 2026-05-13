@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { generateShareId } from "./utils";
 import type {
   User,
   Project,
@@ -124,62 +125,89 @@ export async function fetchUserById(id: string): Promise<User | null> {
 }
 
 export async function fetchProjects(): Promise<Project[]> {
-  const { data: projects, error: pErr } = await supabase
+  const { data: projects, error } = await supabase
     .from("projects")
-    .select("*")
+    .select("*, stages(*, deliverables(*))")
     .order("updated_at", { ascending: false });
 
-  if (pErr) {
-    console.error("fetchProjects error:", pErr.message);
+  if (error) {
+    console.error("fetchProjects error:", error.message);
     return [];
   }
   if (!projects || projects.length === 0) return [];
 
-  const projectIds = projects.map((p) => p.id);
-
-  const { data: stages } = await supabase
-    .from("stages")
-    .select("*")
-    .in("project_id", projectIds);
-
-  const stageIds = (stages ?? []).map((s) => s.id);
-
-  const { data: deliverables } =
-    stageIds.length > 0
-      ? await supabase.from("deliverables").select("*").in("stage_id", stageIds)
-      : { data: [] };
-
-  return (projects as ProjectRow[]).map((p) =>
-    mapProject(p, (stages as StageRow[]) ?? [], (deliverables as DeliverableRow[]) ?? [])
-  );
+  return projects.map((p: any) => {
+    const stages = (p.stages ?? [])
+      .sort((a: any, b: any) => a.sort_order - b.sort_order)
+      .map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        order: s.sort_order,
+        status: s.status,
+        expectedDate: s.expected_date ?? undefined,
+        completedDate: s.completed_date ?? undefined,
+        files: (s.deliverables ?? []).map((d: any) => ({
+          id: d.id,
+          name: d.name,
+          url: d.url,
+          size: d.size,
+          uploadedAt: d.uploaded_at,
+        })),
+      }));
+    return {
+      id: p.id,
+      name: p.name,
+      clientName: p.client_name,
+      clientEmail: p.client_email ?? undefined,
+      shareId: p.share_id,
+      sharePassword: p.share_password ?? undefined,
+      status: p.status,
+      createdAt: p.created_at,
+      updatedAt: p.updated_at,
+      stages,
+    };
+  });
 }
 
 export async function fetchProjectById(id: string): Promise<Project | null> {
   const { data: project, error } = await supabase
     .from("projects")
-    .select("*")
+    .select("*, stages(*, deliverables(*))")
     .eq("id", id)
     .single();
 
-  if (error) return null;
+  if (error || !project) return null;
 
-  const { data: stages } = await supabase
-    .from("stages")
-    .select("*")
-    .eq("project_id", id);
-
-  const stageIds = (stages ?? []).map((s) => s.id);
-
-  const { data: deliverables } =
-    stageIds.length > 0
-      ? await supabase.from("deliverables").select("*").in("stage_id", stageIds)
-      : { data: [] };
-
-  return mapProject(
-    project as ProjectRow,
-    (stages as StageRow[]) ?? [],
-    (deliverables as DeliverableRow[]) ?? []
-  );
+  const p = project as any;
+  const stages = (p.stages ?? [])
+    .sort((a: any, b: any) => a.sort_order - b.sort_order)
+    .map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      order: s.sort_order,
+      status: s.status,
+      expectedDate: s.expected_date ?? undefined,
+      completedDate: s.completed_date ?? undefined,
+      files: (s.deliverables ?? []).map((d: any) => ({
+        id: d.id,
+        name: d.name,
+        url: d.url,
+        size: d.size,
+        uploadedAt: d.uploaded_at,
+      })),
+    }));
+  return {
+    id: p.id,
+    name: p.name,
+    clientName: p.client_name,
+    clientEmail: p.client_email ?? undefined,
+    shareId: p.share_id,
+    sharePassword: p.share_password ?? undefined,
+    status: p.status,
+    createdAt: p.created_at,
+    updatedAt: p.updated_at,
+    stages,
+  };
 }
 
 export async function fetchProjectByShareId(
@@ -187,29 +215,42 @@ export async function fetchProjectByShareId(
 ): Promise<Project | null> {
   const { data: project, error } = await supabase
     .from("projects")
-    .select("*")
+    .select("*, stages(*, deliverables(*))")
     .eq("share_id", shareId)
     .single();
 
-  if (error) return null;
+  if (error || !project) return null;
 
-  const { data: stages } = await supabase
-    .from("stages")
-    .select("*")
-    .eq("project_id", project.id);
-
-  const stageIds = (stages ?? []).map((s) => s.id);
-
-  const { data: deliverables } =
-    stageIds.length > 0
-      ? await supabase.from("deliverables").select("*").in("stage_id", stageIds)
-      : { data: [] };
-
-  return mapProject(
-    project as ProjectRow,
-    (stages as StageRow[]) ?? [],
-    (deliverables as DeliverableRow[]) ?? []
-  );
+  const p = project as any;
+  const stages = (p.stages ?? [])
+    .sort((a: any, b: any) => a.sort_order - b.sort_order)
+    .map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      order: s.sort_order,
+      status: s.status,
+      expectedDate: s.expected_date ?? undefined,
+      completedDate: s.completed_date ?? undefined,
+      files: (s.deliverables ?? []).map((d: any) => ({
+        id: d.id,
+        name: d.name,
+        url: d.url,
+        size: d.size,
+        uploadedAt: d.uploaded_at,
+      })),
+    }));
+  return {
+    id: p.id,
+    name: p.name,
+    clientName: p.client_name,
+    clientEmail: p.client_email ?? undefined,
+    shareId: p.share_id,
+    sharePassword: p.share_password ?? undefined,
+    status: p.status,
+    createdAt: p.created_at,
+    updatedAt: p.updated_at,
+    stages,
+  };
 }
 
 export async function fetchMessagesByProject(
@@ -276,19 +317,28 @@ export async function fetchPlans(): Promise<Plan[]> {
 // --- Stats (derived from real data) ---
 
 export async function fetchStats() {
-  const [usersRes, projectsRes, activeRes] = await Promise.all([
+  const [usersRes, projectsRes, activeRes, revenueRes] = await Promise.all([
     supabase.from("profiles").select("id", { count: "exact", head: true }),
     supabase.from("projects").select("id", { count: "exact", head: true }),
     supabase
       .from("profiles")
       .select("id", { count: "exact", head: true })
       .eq("status", "active"),
+    supabase
+      .from("orders")
+      .select("amount")
+      .eq("status", "paid"),
   ]);
+
+  const monthlyRevenue = (revenueRes.data ?? []).reduce(
+    (sum, order) => sum + (order as { amount: number }).amount,
+    0
+  );
 
   return {
     totalUsers: usersRes.count ?? 0,
     activeUsers: activeRes.count ?? 0,
-    monthlyRevenue: 0,
+    monthlyRevenue,
     totalProjects: projectsRes.count ?? 0,
   };
 }
@@ -347,4 +397,245 @@ export async function signUp(
 
 export async function signOut() {
   await supabase.auth.signOut();
+}
+
+// --- Mutations: Projects ---
+
+export async function createProject(data: {
+  name: string;
+  clientName: string;
+  clientEmail?: string;
+}): Promise<Project> {
+  const { data: project, error } = await supabase
+    .from("projects")
+    .insert({
+      name: data.name,
+      client_name: data.clientName,
+      client_email: data.clientEmail ?? null,
+      share_id: generateShareId(),
+      status: "draft",
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapProject(project as ProjectRow, [], []);
+}
+
+export async function updateProject(
+  id: string,
+  data: { name?: string; clientName?: string; clientEmail?: string; status?: string }
+): Promise<void> {
+  const updates: Record<string, string | null> = {};
+  if (data.name !== undefined) updates.name = data.name;
+  if (data.clientName !== undefined) updates.client_name = data.clientName;
+  if (data.clientEmail !== undefined) updates.client_email = data.clientEmail;
+  if (data.status !== undefined) updates.status = data.status;
+  updates.updated_at = new Date().toISOString();
+
+  const { error } = await supabase
+    .from("projects")
+    .update(updates)
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+export async function deleteProject(id: string): Promise<void> {
+  // Delete stages first (cascade)
+  const { data: stages } = await supabase
+    .from("stages")
+    .select("id")
+    .eq("project_id", id);
+
+  if (stages && stages.length > 0) {
+    const stageIds = stages.map((s) => s.id);
+    // Delete deliverables for these stages
+    await supabase
+      .from("deliverables")
+      .delete()
+      .in("stage_id", stageIds);
+    // Delete stages
+    await supabase.from("stages").delete().in("id", stageIds);
+  }
+
+  // Delete messages
+  await supabase
+    .from("client_messages")
+    .delete()
+    .eq("project_id", id);
+
+  // Delete project
+  const { error } = await supabase.from("projects").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// --- Mutations: Stages ---
+
+export async function createStage(
+  projectId: string,
+  data: { name: string }
+): Promise<Stage> {
+  // Get current max sort_order
+  const { data: existing } = await supabase
+    .from("stages")
+    .select("sort_order")
+    .eq("project_id", projectId)
+    .order("sort_order", { ascending: false })
+    .limit(1);
+
+  const nextOrder = existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
+
+  const { data: stage, error } = await supabase
+    .from("stages")
+    .insert({
+      project_id: projectId,
+      name: data.name,
+      sort_order: nextOrder,
+      status: "pending",
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapStage(stage as StageRow, []);
+}
+
+export async function updateStage(
+  id: string,
+  data: { name?: string; status?: string; expectedDate?: string; completedDate?: string }
+): Promise<void> {
+  const updates: Record<string, string | null> = {};
+  if (data.name !== undefined) updates.name = data.name;
+  if (data.status !== undefined) updates.status = data.status;
+  if (data.expectedDate !== undefined) updates.expected_date = data.expectedDate;
+  if (data.completedDate !== undefined) updates.completed_date = data.completedDate;
+
+  const { error } = await supabase
+    .from("stages")
+    .update(updates)
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+export async function updateStageOrder(
+  stages: { id: string; sort_order: number }[]
+): Promise<void> {
+  const { error } = await supabase.rpc("update_stage_orders", {
+    updates: stages,
+  });
+  if (error) {
+    // Fallback: individual updates if RPC not available
+    for (const stage of stages) {
+      const { error: e } = await supabase
+        .from("stages")
+        .update({ sort_order: stage.sort_order })
+        .eq("id", stage.id);
+      if (e) throw e;
+    }
+  }
+}
+
+export async function deleteStage(id: string): Promise<void> {
+  // Delete deliverables first
+  await supabase.from("deliverables").delete().eq("stage_id", id);
+  const { error } = await supabase.from("stages").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// --- Mutations: Messages ---
+
+export async function createMessage(
+  projectId: string,
+  content: string,
+  authorName: string
+): Promise<void> {
+  const { error } = await supabase.from("client_messages").insert({
+    project_id: projectId,
+    content,
+    author_name: authorName,
+  });
+
+  if (error) throw error;
+}
+
+// --- Mutations: Users ---
+
+export async function updateUser(
+  id: string,
+  data: { name?: string; role?: string; status?: string; plan?: string }
+): Promise<void> {
+  const updates: Record<string, string> = {};
+  if (data.name !== undefined) updates.name = data.name;
+  if (data.role !== undefined) updates.role = data.role;
+  if (data.status !== undefined) updates.status = data.status;
+  if (data.plan !== undefined) updates.plan = data.plan;
+
+  const { error } = await supabase
+    .from("profiles")
+    .update(updates)
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+// --- Mutations: Orders ---
+
+export async function createOrder(data: {
+  userId: string;
+  planId: string;
+  amount: number;
+  paymentMethod: string;
+}): Promise<string> {
+  const { data: order, error } = await supabase
+    .from("orders")
+    .insert({
+      user_id: data.userId,
+      plan_id: data.planId,
+      amount: data.amount,
+      payment_method: data.paymentMethod,
+      status: "pending",
+    })
+    .select("id")
+    .single();
+
+  if (error) throw error;
+  return (order as { id: string }).id;
+}
+
+export async function completeOrder(orderId: string): Promise<void> {
+  const { data: order, error: fetchError } = await supabase
+    .from("orders")
+    .select("user_id, plan_id")
+    .eq("id", orderId)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // Update order status
+  const { error: updateError } = await supabase
+    .from("orders")
+    .update({ status: "paid" })
+    .eq("id", orderId);
+
+  if (updateError) throw updateError;
+
+  // Update user plan
+  const orderData = order as { user_id: string; plan_id: string };
+  await updateUser(orderData.user_id, { plan: orderData.plan_id });
+}
+
+export async function fetchOrdersByUser(userId: string) {
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("fetchOrders error:", error.message);
+    return [];
+  }
+  return data;
 }

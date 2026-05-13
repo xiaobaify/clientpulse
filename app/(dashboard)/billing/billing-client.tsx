@@ -1,0 +1,43 @@
+"use client";
+
+import { useState } from "react";
+import { PlanCard } from "@/components/billing/plan-card";
+import { PaymentDialog } from "@/components/billing/payment-dialog";
+import type { Plan } from "@/lib/types";
+
+interface BillingPageClientProps {
+  plans: Plan[];
+}
+
+export function BillingPageClient({ plans }: BillingPageClientProps) {
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  function handleSelectPlan(plan: Plan) {
+    setSelectedPlan(plan);
+    setDialogOpen(true);
+  }
+
+  return (
+    <>
+      <div className="grid gap-6 md:grid-cols-3">
+        {plans.map((plan) => (
+          <PlanCard
+            key={plan.id}
+            plan={plan}
+            isPopular={plan.id === "pro"}
+            onSelect={() => handleSelectPlan(plan)}
+          />
+        ))}
+      </div>
+
+      {selectedPlan && (
+        <PaymentDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          plan={selectedPlan}
+        />
+      )}
+    </>
+  );
+}

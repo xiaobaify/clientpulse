@@ -8,6 +8,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import { ArrowLeft, Mail } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -18,14 +19,12 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 验证码相关
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [countdown, setCountdown] = useState(0);
   const [verifyError, setVerifyError] = useState("");
   const [verifyLoading, setVerifyLoading] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // 倒计时
   useEffect(() => {
     if (countdown <= 0) return;
     const timer = setInterval(() => {
@@ -34,7 +33,6 @@ export default function RegisterPage() {
     return () => clearInterval(timer);
   }, [countdown]);
 
-  // 发送验证码
   async function handleSendCode(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -72,7 +70,6 @@ export default function RegisterPage() {
     setLoading(false);
   }
 
-  // 处理验证码输入
   function handleCodeChange(index: number, value: string) {
     if (!/^\d*$/.test(value)) return;
     const newCode = [...code];
@@ -83,7 +80,6 @@ export default function RegisterPage() {
       inputRefs.current[index + 1]?.focus();
     }
 
-    // 满6位自动提交
     if (newCode.every((c) => c !== "") && index === 5) {
       verifyCode(newCode.join(""));
     }
@@ -112,7 +108,6 @@ export default function RegisterPage() {
     }
   }
 
-  // 校验验证码并注册
   const verifyCode = useCallback(
     async (codeStr: string) => {
       setVerifyError("");
@@ -132,7 +127,6 @@ export default function RegisterPage() {
           return;
         }
 
-        // 注册成功，用邮箱密码登录
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -152,7 +146,6 @@ export default function RegisterPage() {
     [email, password, router]
   );
 
-  // 重新发送验证码
   async function handleResend() {
     if (countdown > 0) return;
     setVerifyError("");
@@ -181,136 +174,147 @@ export default function RegisterPage() {
     setLoading(false);
   }
 
-  // --- 验证码输入步骤 ---
   if (step === "verify") {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Card className="w-full max-w-sm">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">输入验证码</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <p className="text-center text-sm text-muted-foreground">
-              验证码已发送至
-              <br />
-              <span className="font-medium text-foreground">{email}</span>
-            </p>
+      <Card className="border-border/50 bg-card/80 shadow-xl shadow-primary/5 backdrop-blur-sm">
+        <CardHeader className="text-center pb-2">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <Mail className="h-6 w-6 text-primary" />
+          </div>
+          <CardTitle className="text-2xl">验证邮箱</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            验证码已发送至
+            <br />
+            <span className="font-medium text-foreground">{email}</span>
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex justify-center gap-2">
+            {code.map((digit, i) => (
+              <input
+                key={i}
+                ref={(el) => { inputRefs.current[i] = el; }}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleCodeChange(i, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(i, e)}
+                onPaste={i === 0 ? handlePaste : undefined}
+                className="h-12 w-12 rounded-lg border border-input bg-background text-center text-xl font-semibold tabular-nums transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                disabled={verifyLoading}
+              />
+            ))}
+          </div>
 
-            <div className="flex justify-center gap-2">
-              {code.map((digit, i) => (
-                <input
-                  key={i}
-                  ref={(el) => { inputRefs.current[i] = el; }}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleCodeChange(i, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(i, e)}
-                  onPaste={i === 0 ? handlePaste : undefined}
-                  className="h-12 w-12 rounded-md border border-input bg-background text-center text-xl font-semibold tabular-nums focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
-                  disabled={verifyLoading}
-                />
-              ))}
-            </div>
-
-            {verifyError && (
+          {verifyError && (
+            <div className="rounded-lg bg-destructive/10 px-3 py-2">
               <p className="text-center text-sm text-destructive">{verifyError}</p>
-            )}
-
-            {verifyLoading && (
-              <p className="text-center text-sm text-muted-foreground">正在注册...</p>
-            )}
-
-            <div className="text-center">
-              {countdown > 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {countdown} 秒后可重新发送
-                </p>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleResend}
-                  disabled={loading}
-                  className="text-sm text-primary underline-offset-4 hover:underline"
-                >
-                  {loading ? "发送中..." : "重新发送验证码"}
-                </button>
-              )}
             </div>
+          )}
 
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => {
-                setStep("form");
-                setCode(["", "", "", "", "", ""]);
-                setVerifyError("");
-              }}
-            >
-              返回修改邮箱
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+          {verifyLoading && (
+            <p className="text-center text-sm text-muted-foreground">正在注册...</p>
+          )}
+
+          <div className="text-center">
+            {countdown > 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {countdown} 秒后可重新发送
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={loading}
+                className="text-sm font-medium text-primary hover:underline underline-offset-4"
+              >
+                {loading ? "发送中..." : "重新发送验证码"}
+              </button>
+            )}
+          </div>
+
+          <Button
+            variant="outline"
+            className="w-full gap-2"
+            onClick={() => {
+              setStep("form");
+              setCode(["", "", "", "", "", ""]);
+              setVerifyError("");
+            }}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            返回修改邮箱
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
-  // --- 邮箱密码表单 ---
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">注册</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form className="space-y-4" onSubmit={handleSendCode}>
-            <div className="space-y-2">
-              <Label htmlFor="email">邮箱</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+    <Card className="border-border/50 bg-card/80 shadow-xl shadow-primary/5 backdrop-blur-sm">
+      <CardHeader className="text-center pb-2">
+        <CardTitle className="text-2xl">创建账号</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          注册后即可开始管理客户项目
+        </p>
+      </CardHeader>
+      <CardContent>
+        <form className="space-y-4" onSubmit={handleSendCode}>
+          <div className="space-y-2">
+            <Label htmlFor="email">邮箱</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">密码</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="至少 6 位"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">确认密码</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              placeholder="再次输入密码"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
+          </div>
+          {error && (
+            <div className="rounded-lg bg-destructive/10 px-3 py-2">
+              <p className="text-sm text-destructive">{error}</p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">密码</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="至少 6 位"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">确认密码</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="再次输入密码"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-            </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "发送中..." : "发送验证码"}
-            </Button>
-          </form>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
+          )}
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "发送中..." : "发送验证码"}
+          </Button>
+        </form>
+        <div className="mt-6 text-center">
+          <p className="text-sm text-muted-foreground">
             已有账号？{" "}
-            <Link href="/login" className="text-primary underline-offset-4 hover:underline">
+            <Link
+              href="/login"
+              className="font-medium text-primary hover:underline underline-offset-4"
+            >
               立即登录
             </Link>
           </p>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

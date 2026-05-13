@@ -1,7 +1,7 @@
-import { PlanCard } from "@/components/billing/plan-card";
 import { fetchPlans } from "@/lib/api";
+import { PlansPageClient } from "./plans-client";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function PlansPage() {
   const plans = await fetchPlans();
@@ -13,17 +13,7 @@ export default async function PlansPage() {
         <p className="mt-2 text-muted-foreground">选择适合您的订阅套餐</p>
       </div>
 
-      <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-3">
-        {plans.map((plan, i) => (
-          <div
-            key={plan.id}
-            className="animate-fade-in-up h-full"
-            style={{ animationDelay: `${i * 100}ms` }}
-          >
-            <PlanCard plan={plan} isPopular={plan.id === "pro"} />
-          </div>
-        ))}
-      </div>
+      <PlansPageClient plans={plans} />
     </div>
   );
 }

@@ -10,11 +10,12 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 interface NavChild {
   title: string;
@@ -57,12 +58,19 @@ const navItems: NavItem[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("sidebar-collapsed") === "true";
+    }
+    return false;
+  });
 
-  // Track which parent groups are open
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
-  // Auto-expand groups that contain the active route
+  useEffect(() => {
+    localStorage.setItem("sidebar-collapsed", String(collapsed));
+  }, [collapsed]);
+
   const effectiveOpenGroups = useMemo(() => {
     const result = { ...openGroups };
     for (const item of navItems) {
@@ -90,38 +98,46 @@ export function Sidebar() {
       )}
     >
       <div className="flex h-14 items-center border-b px-4">
-        {!collapsed && (
-          <Link href="/" className="font-bold text-lg">
-            ClientPulse
-          </Link>
-        )}
+        <Link href="/" className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-sm shadow-primary/25">
+            <Zap className="h-4 w-4 text-primary-foreground" />
+          </div>
+          {!collapsed && (
+            <span className="font-bold text-lg tracking-tight">ClientPulse</span>
+          )}
+        </Link>
       </div>
 
-      <nav className="flex-1 space-y-1 p-2">
+      <nav className="flex-1 space-y-0.5 p-2">
         {navItems.map((item) => {
           const Icon = item.icon;
 
           if (item.children) {
-            // Parent with children: highlight when on parent or any child route
             const isGroupActive =
               pathname === item.href ||
               item.children.some((c) => pathname === c.href);
             const isOpen = effectiveOpenGroups[item.href] ?? false;
 
             return (
-              <div key={item.href}>
+              <div key={item.href} className="relative group">
                 <button
                   onClick={() => {
-                    if (collapsed) return;
+                    if (collapsed) {
+                      setCollapsed(false);
+                      return;
+                    }
                     toggleGroup(item.href);
                   }}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                    "relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                     isGroupActive
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   )}
                 >
+                  {isGroupActive && (
+                    <div className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-primary-foreground" />
+                  )}
                   <Icon className="h-5 w-5 flex-shrink-0" />
                   {!collapsed && (
                     <>
@@ -135,9 +151,15 @@ export function Sidebar() {
                     </>
                   )}
                 </button>
+                {/* CSS tooltip for collapsed mode */}
+                {collapsed && (
+                  <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md bg-foreground px-2.5 py-1 text-xs text-background opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+                    {item.title}
+                  </div>
+                )}
 
                 {!collapsed && isOpen && (
-                  <div className="ml-6 mt-1 space-y-1">
+                  <div className="ml-4 mt-0.5 space-y-0.5 border-l border-border pl-3">
                     {item.children.map((child) => {
                       const isChildActive = pathname === child.href;
                       return (
@@ -147,7 +169,7 @@ export function Sidebar() {
                           className={cn(
                             "flex items-center rounded-lg px-3 py-1.5 text-sm transition-colors",
                             isChildActive
-                              ? "bg-primary/15 text-primary font-medium"
+                              ? "bg-primary/10 text-primary font-medium"
                               : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                           )}
                         >
@@ -161,25 +183,34 @@ export function Sidebar() {
             );
           }
 
-          // Regular item (no children)
           const isActive =
             pathname === item.href ||
             (item.href !== "/" && pathname.startsWith(item.href));
 
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            <div key={item.href} className="relative group">
+              <Link
+                href={item.href}
+                className={cn(
+                  "relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                )}
+              >
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-primary-foreground" />
+                )}
+                <Icon className="h-5 w-5 flex-shrink-0" />
+                {!collapsed && <span>{item.title}</span>}
+              </Link>
+              {/* CSS tooltip for collapsed mode */}
+              {collapsed && (
+                <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md bg-foreground px-2.5 py-1 text-xs text-background opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+                  {item.title}
+                </div>
               )}
-            >
-              <Icon className="h-5 w-5 flex-shrink-0" />
-              {!collapsed && <span>{item.title}</span>}
-            </Link>
+            </div>
           );
         })}
       </nav>

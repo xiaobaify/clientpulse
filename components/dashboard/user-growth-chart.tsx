@@ -47,8 +47,8 @@ export function UserGrowthChart({ data }: UserGrowthChartProps) {
             <Area
               type="monotone"
               dataKey="users"
-              stroke="hsl(var(--primary))"
-              fill="hsl(var(--primary))"
+              stroke="var(--chart-1)"
+              fill="var(--chart-1)"
               fillOpacity={0.2}
             />
           </AreaChart>

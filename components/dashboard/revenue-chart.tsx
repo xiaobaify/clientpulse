@@ -50,7 +50,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
             <Line
               type="monotone"
               dataKey="revenue"
-              stroke="hsl(var(--primary))"
+              stroke="var(--chart-1)"
               strokeWidth={2}
               dot={false}
             />

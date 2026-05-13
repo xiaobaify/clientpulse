@@ -1,5 +1,4 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -8,15 +7,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download } from "lucide-react";
+import { Receipt } from "lucide-react";
 
-// Invoices require a dedicated billing/invoices table.
-// Showing empty state until billing integration is added.
 export default function InvoicesPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-bold">发票列表</h1>
+        <h1 className="text-3xl font-bold tracking-tight">发票列表</h1>
         <p className="text-muted-foreground">查看和下载您的发票</p>
       </div>
 
@@ -38,8 +35,16 @@ export default function InvoicesPage() {
             </TableHeader>
             <TableBody>
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  暂无发票记录
+                <TableCell colSpan={6}>
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                      <Receipt className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <p className="font-medium text-sm">暂无发票记录</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      订阅套餐后，发票将显示在这里
+                    </p>
+                  </div>
                 </TableCell>
               </TableRow>
             </TableBody>

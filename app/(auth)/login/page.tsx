@@ -33,48 +33,64 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">登录</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="space-y-2">
-              <Label htmlFor="email">邮箱</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="admin@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
+    <Card className="border-border/50 bg-card/80 shadow-xl shadow-primary/5 backdrop-blur-sm">
+      <CardHeader className="text-center pb-2">
+        <CardTitle className="text-2xl">登录</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          欢迎回来，请输入您的账号信息
+        </p>
+      </CardHeader>
+      <CardContent>
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-2">
+            <Label htmlFor="email">邮箱</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="admin@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
               <Label htmlFor="password">密码</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <Link
+                href="#"
+                className="text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                忘记密码？
+              </Link>
             </div>
-            {error && (
+            <Input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          {error && (
+            <div className="rounded-lg bg-destructive/10 px-3 py-2">
               <p className="text-sm text-destructive">{error}</p>
-            )}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "登录中..." : "登录"}
-            </Button>
-          </form>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
+            </div>
+          )}
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "登录中..." : "登录"}
+          </Button>
+        </form>
+        <div className="mt-6 text-center">
+          <p className="text-sm text-muted-foreground">
             没有账号？{" "}
-            <Link href="/register" className="text-primary underline-offset-4 hover:underline">
+            <Link
+              href="/register"
+              className="font-medium text-primary hover:underline underline-offset-4"
+            >
               立即注册
             </Link>
           </p>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -4,7 +4,7 @@ import { UserDetailCard } from "@/components/users/user-detail-card";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 interface UserDetailPageProps {
   params: Promise<{ id: string }>;
